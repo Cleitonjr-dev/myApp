@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
-import 'package:myapp/Pages/atendimentosAgendadoPage.dart';
-
 
 class ServicosPage extends StatefulWidget {
   const ServicosPage({Key? key}) : super(key: key);
@@ -14,6 +12,7 @@ class ServicosPage extends StatefulWidget {
 class _ServicosPageState extends State<ServicosPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  List<Appointment> appointments = [];
 
   @override
   void initState() {
@@ -67,7 +66,8 @@ class _ServicosPageState extends State<ServicosPage>
   void finishPurchase() {
     Navigator.of(context).pop();
 
-    // Exibe o aviso de confirmação de agendamento
+    appointments.add(Appointment(selectedServices.toList()));
+
     showToast(
       'Agendamento Realizado com sucesso!',
       context: context,
@@ -80,16 +80,9 @@ class _ServicosPageState extends State<ServicosPage>
       animDuration: Duration(milliseconds: 200),
     );
 
-    // Limpa os serviços selecionados após um atraso de 1 segundo
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      setState(() {
-        selectedServices.clear();
-        isPurchaseFinished = true;
-      });
-    }).then((_) {
-      setState(() {
-        isPurchaseFinished = false;
-      });
+    setState(() {
+      selectedServices.clear();
+      isPurchaseFinished = true;
     });
   }
 
@@ -124,7 +117,7 @@ class _ServicosPageState extends State<ServicosPage>
             getTotalValue: getTotalValue,
             finishPurchase: finishPurchase,
           ),
-          AtendimentoAgendadoPage(serviceSummary: '',),
+          AtendimentoAgendadoPage(appointments: appointments),
         ],
       ),
     );
@@ -166,12 +159,11 @@ class ServicosPageContent extends StatelessWidget {
                   child: Card(
                     child: ListTile(
                       title: Text(service.name),
-                      subtitle: Text(
-                          'Valor: R\$${service.value.toStringAsFixed(2)}'),
+                      subtitle:
+                          Text('Valor: R\$${service.value.toStringAsFixed(2)}'),
                       trailing: Checkbox(
                         value: selectedServices.contains(service),
-                        onChanged: (value) =>
-                            toggleServiceSelection(service),
+                        onChanged: (value) => toggleServiceSelection(service),
                         activeColor: Colors.deepPurpleAccent,
                       ),
                     ),
@@ -234,11 +226,66 @@ class ServicosPageContent extends StatelessWidget {
   }
 }
 
+class AtendimentoAgendadoPage extends StatelessWidget {
+  final List<Appointment> appointments;
 
+  const AtendimentoAgendadoPage({required this.appointments});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Serviços Agendados',
+              style: GoogleFonts.ubuntu(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 10),
+            Expanded(
+              child: ListView.builder(
+                itemCount: appointments.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final appointment = appointments[index];
+                  return Card(
+                    elevation: 0.3,
+                    child: ExpansionTile(
+                      title: Text('Agendamento ${index + 1}'),
+                      children: <Widget>[
+                        for (var service in appointment.services)
+                          ListTile(
+                            title: Text(service.name),
+                            subtitle: Text(
+                              'Valor: R\$${service.value.toStringAsFixed(2)}',
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class Service {
   final String name;
   final double value;
 
   Service({required this.name, required this.value});
+}
+
+class Appointment {
+  final List<Service> services;
+
+  Appointment(this.services);
 }
