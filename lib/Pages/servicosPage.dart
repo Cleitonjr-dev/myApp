@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
+import 'package:myapp/Pages/calendarioPage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class ServicosPage extends StatefulWidget {
   const ServicosPage({Key? key}) : super(key: key);
@@ -13,19 +16,6 @@ class _ServicosPageState extends State<ServicosPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<Appointment> appointments = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
   List<Service> services = [
     Service(name: 'Pé', value: 25.0),
     Service(name: 'Mão', value: 30.0),
@@ -41,9 +31,35 @@ class _ServicosPageState extends State<ServicosPage>
     Service(name: 'Cabelo', value: 110.0),
     Service(name: 'Outros', value: 10.0),
   ];
-
   List<Service> selectedServices = [];
   bool isPurchaseFinished = false;
+  late SharedPreferences _preferences;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _loadAppointments();
+  }
+
+  Future<void> _loadAppointments() async {
+    _preferences = await SharedPreferences.getInstance();
+    final appointmentsJson = _preferences.getString('appointments');
+    if (appointmentsJson != null) {
+      final List<dynamic> appointmentsData = jsonDecode(appointmentsJson);
+      final List<Appointment> loadedAppointments =
+          appointmentsData.map((data) => Appointment.fromJson(data)).toList();
+      setState(() {
+        appointments = loadedAppointments;
+      });
+    }
+  }
+
+  Future<void> _saveAppointments() async {
+    final appointmentsJson = jsonEncode(
+        appointments.map((appointment) => appointment.toJson()).toList());
+    await _preferences.setString('appointments', appointmentsJson);
+  }
 
   double getTotalValue() {
     double total = 0.0;
@@ -65,7 +81,6 @@ class _ServicosPageState extends State<ServicosPage>
 
   void finishPurchase() {
     Navigator.of(context).pop();
-
     appointments.add(Appointment(selectedServices.toList()));
 
     showToast(
@@ -82,7 +97,8 @@ class _ServicosPageState extends State<ServicosPage>
 
     setState(() {
       selectedServices.clear();
-      isPurchaseFinished = true;
+      isPurchaseFinished = false;
+      _saveAppointments();
     });
   }
 
@@ -198,16 +214,56 @@ class ServicosPageContent extends StatelessWidget {
                             ],
                           ),
                           actions: [
-                            Center(
-                              child: TextButton(
-                                onPressed: finishPurchase,
-                                child: const Text(
-                                  'Confirmar Agendamento',
-                                  style: TextStyle(
-                                    color: Colors.deepPurpleAccent,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                TextButton(
+                                  onPressed: () {
+                                    // navegação para tela de calendário.
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              calendarioPage()),
+                                    );
+                                  },
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_month,
+                                        color: Colors.deepPurpleAccent,
+                                      ),
+                                      Text(
+                                        'Calendário',
+                                        style: TextStyle(
+                                          color: Colors.deepPurpleAccent,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                              ),
+                                TextButton(
+                                  onPressed: finishPurchase,
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle,
+                                        color: Color.fromARGB(255, 97, 170, 13),
+                                      ),
+                                      Text(
+                                        'Confirmar',
+                                        style: TextStyle(
+                                          color: Color.fromARGB(255, 97, 170, 13),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         );
@@ -282,10 +338,38 @@ class Service {
   final double value;
 
   Service({required this.name, required this.value});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'value': value,
+    };
+  }
+
+  factory Service.fromJson(Map<String, dynamic> json) {
+    return Service(
+      name: json['name'],
+      value: json['value'],
+    );
+  }
 }
 
 class Appointment {
   final List<Service> services;
 
   Appointment(this.services);
+
+  Map<String, dynamic> toJson() {
+    return {
+      'services': services.map((service) => service.toJson()).toList(),
+    };
+  }
+
+  factory Appointment.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> servicesData = json['services'];
+    final List<Service> loadedServices =
+        servicesData.map((data) => Service.fromJson(data)).toList();
+
+    return Appointment(loadedServices);
+  }
 }

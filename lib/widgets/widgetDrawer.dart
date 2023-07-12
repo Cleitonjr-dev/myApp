@@ -26,7 +26,7 @@ class _ScreenDrawerState extends State<ScreenDrawer> {
   List<String> menuItens = [
     "Home",
     "Serviços",
-    "Calendário",
+    //"Calendário",
     //"Agendamentos",
     "Pagamentos",
     "Configurações",
@@ -34,7 +34,7 @@ class _ScreenDrawerState extends State<ScreenDrawer> {
   List<IconData> menuIcon = [
     Icons.apps,
     Icons.design_services,
-    Icons.date_range_outlined,
+    //Icons.date_range_outlined,
     //Icons.person_search_outlined,
     Icons.wallet_outlined,
     Icons.settings,
@@ -103,7 +103,7 @@ class _ScreenDrawerState extends State<ScreenDrawer> {
                 const SizedBox(height: 25),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: List.generate(5, (index) {
+                  children: List.generate(4, (index) {
                     return Material(
                       color: Colors.transparent,
                       child: InkWell(
@@ -220,12 +220,12 @@ class _ScreenDrawerState extends State<ScreenDrawer> {
           MaterialPageRoute(builder: (context) => ServicosPage()),
         );
         break;
-      case 2:
+      /*case 2:
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => calendarioPage()),
         );
-        break;
+        break;*/
       /*case 3:
         Navigator.push(
           context,
